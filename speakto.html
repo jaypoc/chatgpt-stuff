@@ -1,0 +1,63 @@
+<html>
+    <head>
+        <title>Talk To ChatGPT</title>
+    </head>
+    <body>
+        <h1>Chat with me.</h1>
+        <div class="words"></div>
+    </body>
+    <script>
+        window.SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        const recognition = new SpeechRecognition();
+        recognition.interimResults = true;
+
+        let p = document.createElement("p");
+        const words = document.querySelector(".words");
+        words.appendChild(p);
+
+        recognition.addEventListener("result", (e) => {
+            const transcript = Array.from(e.results)
+                .map((result) => result[0])
+                .map((result) => result.transcript)
+                .join("");
+
+            p.textContent = transcript;
+
+            if (e.results[0].isFinal) {
+                p = document.createElement("p");
+                words.appendChild(p);
+
+                // send transcript to the OpenAI API for response
+                fetch("https://api.openai.com/v1/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer <YOUR API TOKEN>",
+                    },
+                    body: JSON.stringify({
+                        model: 'text-davinci-003',
+                        prompt: transcript,
+                        max_tokens: 100,
+                        n: 1,
+                        stop: null,
+                        temperature: 0.5,
+                    }),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    const responseText = data.choices[0].text;
+                    p.textContent = responseText;
+                }).catch( (error) => {
+                    p.textContent = error
+
+                });
+            }
+        });
+
+        recognition.addEventListener("end", recognition.start);
+        recognition.start();
+    </script>
+</html>
+
